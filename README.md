@@ -2,7 +2,7 @@
 
 a simpler approach to rpc/multiplexing
 
-# proir work
+## proir work
 
 Over the course of streams and so on with node, there have been
 many approaches to rpc and to multiplexing. substack's [dnode](https://github.com/substack/dnode)
@@ -31,16 +31,15 @@ is tcp implemented on top of tcp, but is this really the right approach?
 Shouldn't tcp be implemented on top of packets?
 
 Any useful node api needs streams, but also needs callbacks and maybe events too.
-
-So therefore packet stream provides messages as the fundemantal building block,
-and provideds request/response (async+callback) and streams (a sequence of messages)
-as well.
+So therefore `packet-stream` provides messages as the fundamental building block,
+and implements request/response (async+callback) and streams (a sequence of messages)
+on top of messages.
 
 Hopefully, this makes creating remote access to node apis easy and natural!
 
 *WORK IN PROGRESS*
 
-## example
+## Example
 
 ``` js
 var packets = require('packet-stream')
