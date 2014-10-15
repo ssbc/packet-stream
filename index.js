@@ -25,28 +25,51 @@ module.exports = function (opts) {
     }
   }
 
+  function createStream(id) {
+    var seq = 1
+    var stream = {
+      id: id,
+      write: function (data, err) {
+        p.read({req: id, seq: seq++, value: data, end: err})
+      },
+      end: function (err) {
+        stream.write(null, err || true)
+      },
+      read: null
+    }
+
+    return stream
+  }
+
   function onStream (msg) {
 
-    if(msg.req < 0) // it's a response
-      outstreams[msg.req*-1].read(msg.value)
-
+    if(msg.req < 0) { // it's a response
+      var outs = outstreams[msg.req*-1]
+      if(msg.end) {
+        outstreams[msg.req*-1] = null
+        outs.read(null, msg.end)
+      }
+      else
+        outs.read(msg.value)
+    }
     else {
       var ins = instreams[msg.req]
       if(ins) {
-        if(ins.read) ins.read(msg.value)
+        if(ins.read) {
+          if(msg.end) {
+            instreams[msg.req] = null
+            ins.read(null, msg.end)
+          }
+          else
+            ins.read(msg.value)
+        }
         else console.error('no .read for stream:', ins.id, 'dropped:', msg)
       }
       else {
         var seq = 1, req = msg.req
-        var stream = instreams[req] = {
-          id: req,
-          write: function (data) {
-            p.read({req: req*-1, seq: seq++, value: data})
-          },
-          read: null
-        }
+        var stream = instreams[req] = createStream(req*-1)
         opts.stream(stream)
-        stream.read(msg.value)
+        stream.read(msg.value, msg.end)
       }
     }
 
@@ -68,30 +91,29 @@ module.exports = function (opts) {
     },
 
     stream: function (recv) {
-      var id = req++, seq = 1
-      return outstreams[id] = {
-        req: id,
-        write: function (data) {
-          p.read({
-            req: id, seq: seq++, value: data
-          })
-        },
-        read: recv || null
-      }
+      var id = req++
+      return outstreams[id] = createStream(id)
     },
 
     read: function (msg) {
       console.error('please overwrite write method to do IO', msg)
     },
 
-    write: function (msg) {
+    write: function (msg, end) {
+      if(end) {
+        var err = end === true ? new Error('unexpected end of parent stream') : err
+        instreams.forEach(function (s) {
+          s.end(err)
+        })
+        outstreams.forEach(function (s) {
+          s.end(err)
+        })
+        return
+      }
       //handle requests
-      if(msg.req && !msg.seq)
-        onRequest(msg)
-      else if(msg.req && msg.seq)
-        onStream(msg)
-      else
-        onMessage(msg)
+      ; (msg.req && !msg.seq) ? onRequest(msg)
+      : (msg.req && msg.seq)  ? onStream(msg)
+      :                         onMessage(msg)
     }
   }
 }
