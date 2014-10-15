@@ -67,14 +67,19 @@ tape('stream', function (t) {
 
   var s = b.stream()
 
-  s.read = function (data) {
-    actual.push(data)
+  s.read = function (data, end) {
+    if(!end)
+      actual.push(data)
+    else
+      t.end()
   }
 
-  expected.forEach(s.write)
+  expected.forEach(function (data) {
+    s.write(data)
+  })
 
   t.deepEqual(actual, expected)
 
-  t.end()
+  s.end()
 
 })
