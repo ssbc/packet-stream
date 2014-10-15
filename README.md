@@ -19,7 +19,8 @@ which used mux-demux and rpc-stream to create remote access to a leveldb instanc
 This worked pretty well, although it felt like a messy glue job.
 
 Later, maxogden wrote [multiplex](https://github.com/maxogden/multiplex)
-which had better support for binary, as well as substack's
+which had better support for binary, as was later wrapped to a more
+convienient api by substack's
 [dataplex](https://github.com/substack/dataplex)
 
 But something still wasn't right. Thing is, if you look into how all these
