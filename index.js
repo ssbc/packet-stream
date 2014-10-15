@@ -1,9 +1,7 @@
 module.exports = function (opts) {
-  var req = 1
+  var req = 1, p
 
-  var requests = []
-  var instreams = []
-  var outstreams = []
+  var requests = [], instreams = [], outstreams = []
 
   function onMessage (msg) {
     opts.message(msg)
@@ -29,7 +27,6 @@ module.exports = function (opts) {
 
   function onStream (msg) {
 
-    console.log(msg)
     if(msg.req < 0) // it's a response
       outstreams[msg.req*-1].read(msg.value)
 
@@ -55,7 +52,6 @@ module.exports = function (opts) {
 
   }
 
-  var p
   return p = {
     //message with no response, or stream
     message: function (obj) {
