@@ -90,8 +90,9 @@ tape('error async when stream ends', function (t) {
 
   a.request({foo: true}, function (err) {
     t.ok(err)
+    t.equal(a.ended, true)
     t.end()
   })
-
+  t.equal(a.ended, false)
   a.write(null, true)
 })
