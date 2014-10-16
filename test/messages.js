@@ -83,3 +83,15 @@ tape('stream', function (t) {
   s.end()
 
 })
+
+tape('error async when stream ends', function (t) {
+
+  var a = ps({})
+
+  a.request({foo: true}, function (err) {
+    t.ok(err)
+    t.end()
+  })
+
+  a.write(null, true)
+})
