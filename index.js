@@ -76,6 +76,7 @@ module.exports = function (opts) {
   }
 
   return p = {
+    ended: false,
     //message with no response, or stream
     message: function (obj) {
       p.read(obj)
@@ -100,7 +101,9 @@ module.exports = function (opts) {
     },
 
     write: function (msg, end) {
+      if(p.ended) return
       if(end) {
+        p.ended = end
         var err = end === true ? new Error('unexpected end of parent stream') : err
         requests.forEach(function (cb) { cb(err) })
         instreams.forEach(function (s, id) {
