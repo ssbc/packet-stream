@@ -84,7 +84,7 @@ module.exports = function (opts) {
     request: function (obj, callback) {
       var id = req++
       requests[id] = function (err, value) {
-        requests[id] = null
+        delete requests[id]
         callback(err, value)
       }
       p.read({value: obj, req: id})
@@ -102,11 +102,14 @@ module.exports = function (opts) {
     write: function (msg, end) {
       if(end) {
         var err = end === true ? new Error('unexpected end of parent stream') : err
-        instreams.forEach(function (s) {
-          s.end(err)
+        requests.forEach(function (cb) { cb(err) })
+        instreams.forEach(function (s, id) {
+          delete instream[id]
+          s.read(null, err)
         })
-        outstreams.forEach(function (s) {
-          s.end(err)
+        outstreams.forEach(function (s, id) {
+          delete outstreams[id]
+          s.write(null, err)
         })
         return
       }
