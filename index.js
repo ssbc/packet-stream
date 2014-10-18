@@ -107,7 +107,7 @@ module.exports = function (opts) {
         var err = end === true ? new Error('unexpected end of parent stream') : err
         requests.forEach(function (cb) { cb(err) })
         instreams.forEach(function (s, id) {
-          delete instream[id]
+          delete instreams[id]
           s.read(null, err)
         })
         outstreams.forEach(function (s, id) {
