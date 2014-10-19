@@ -1,3 +1,9 @@
+function flat(err) {
+  if(!err) return err
+  if(err === true) return true
+  return {message: err.message, stack: err.stack}
+}
+
 module.exports = function (opts) {
   var req = 1, p
 
@@ -19,7 +25,7 @@ module.exports = function (opts) {
       opts.request(msg.value, function (err, value) {
         if(once) throw new Error('cb called twice from local api')
         once = true
-        if(err) p.read({error: err.message, req: id})
+        if(err) p.read({error: flat(err), req: id})
         else    p.read({value: value, req: id})
       })
     }
@@ -33,7 +39,7 @@ module.exports = function (opts) {
         p.read({req: id, seq: seq++, value: data, end: err})
       },
       end: function (err) {
-        stream.write(null, err || true)
+        stream.write(null, flat(err || true))
       },
       read: null
     }
@@ -103,6 +109,7 @@ module.exports = function (opts) {
     write: function (msg, end) {
       if(p.ended) return
       if(end) {
+        end = end || flat(end)
         p.ended = end
         var err = end === true ? new Error('unexpected end of parent stream') : err
         requests.forEach(function (cb) { cb(err) })
