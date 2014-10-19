@@ -63,7 +63,7 @@ module.exports = function (opts) {
       if(ins) {
         if(ins.read) {
           if(msg.end) {
-            instreams[msg.req] = null
+            delete instreams[msg.req]
             ins.read(null, msg.end)
           }
           else
