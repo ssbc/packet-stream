@@ -35,9 +35,9 @@ So therefore `packet-stream` provides messages as the fundamental building block
 and implements request/response (async+callback) and streams (a sequence of messages)
 on top of messages.
 
-Hopefully, this makes creating remote access to node apis easy and natural!
-
-*WORK IN PROGRESS*
+This is a low level module that implements the core logic necessary for an rpc
+and multiplexing module - it is intended to be wrapped in something closer
+to how the user thinks - like [muxrpc](https://github.com/dominictarr/muxrpc)
 
 ## Example
 
