@@ -55,7 +55,6 @@ tape('stream', function (t) {
 
   var a = ps({
     stream: function (stream) {
-      console.log('CONNECTION')
       //echo server
       stream.read = stream.write
     }
@@ -96,3 +95,111 @@ tape('error async when stream ends', function (t) {
   t.equal(a.ended, false)
   a.write(null, true)
 })
+
+tape('request-response', function (t) {
+
+  t.plan(2)
+
+  var a = ps({
+    request: function (value, cb) {
+      setTimeout(function () {
+        cb(null, value * 2)
+      })
+      //calling a second time should throw.
+    }
+  })
+
+  var b = ps({})
+
+  a.read = b.write; b.read = a.write
+
+  b.request(7, function (err, value) {
+    t.notOk(err)
+    t.equal(value, 14)
+  })
+
+  b.close(function (err) {
+    t.end()
+  })
+
+})
+
+tape('streams, close', function (t) {
+  t.plan(7)
+  var a = ps({
+    stream: function (stream) {
+      //echo server
+      stream.read = function (data, end) {
+        setImmediate(function () {
+          stream.write(data, end)
+        })
+      }
+    }
+  })
+
+  var expected = [1,2,3,3,5]
+
+  var b = ps({})
+
+  var s = b.stream()
+
+  a.read = b.write; b.read = a.write
+
+  b.close(function (err) {
+    t.ok(true)
+    t.end()
+  })
+
+  s.read = function (data, end) {
+    if(end) t.ok(end)
+    else    t.equal(data, expected.shift())
+  }
+
+  expected.forEach(function (d) {
+    s.write(d)
+  })
+  s.write(null, true)
+
+})
+
+tape('receive stream, then close', function (t) {
+  t.plan(7)
+  var a = ps({
+    stream: function (stream) {
+      //echo server
+      stream.read = function (data, end) {
+        setImmediate(function () {
+          stream.write(data, end)
+        })
+      }
+
+      a.close(function (err) {
+        t.ok(true)
+        t.end()
+      })
+
+    }
+  })
+
+  var expected = [1,2,3,3,5]
+
+  var b = ps({})
+
+  var s = b.stream()
+
+  a.read = b.write; b.read = a.write
+
+  s.read = function (data, end) {
+    if(end && end !== true) throw end
+    if(end) t.ok(end)
+    else    t.equal(data, expected.shift())
+  }
+
+  expected.forEach(function (d) {
+    s.write(d)
+  })
+
+  s.write(null, true)
+
+})
+
