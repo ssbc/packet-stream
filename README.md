@@ -92,7 +92,8 @@ stream.write('open - write to stream')
 
 yes, I have weird streams. But they are easy to wrap with
 more normal streams and using simple message oriented streams
-means that the entire implementation could fit into 100 lines.
+means that the entire implementation could fit into 100 lines,
+correction 200 lines now that there is full error checking, and `close`
 
 weird-stream have two methods - `read` and `write`. `read` is
 for data coming out of the stream, and `write` is for data going in.
@@ -108,8 +109,9 @@ A.read = B.write
 B.read = A.write
 ```
 
-That is all there is to it. if you want errors, end, or backpressure,
-that needs to be represented _as data_ within the stream.
+`write(data, end)` and `read(data, end)` both take two arguments.
+`data` and `end`. If `end` is truthy, `data` *must* be ignored.
+back pressure is not currently supported.
 
 ## License
 
