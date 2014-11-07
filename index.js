@@ -10,7 +10,8 @@ module.exports = function (opts, name) {
   var requests = [], instreams = [], outstreams = []
 
   function onMessage (msg) {
-    opts.message(msg)
+    if('function' === typeof opts.message)
+      opts.message(msg)
   }
 
   function onRequest (msg) {
