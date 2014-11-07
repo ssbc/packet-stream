@@ -124,9 +124,11 @@ module.exports = function (opts, name) {
     if(!closing) return
     if(todo !== done) return
     closed = true
-    p.read(null, true)
 
-    closing()
+    var _closing = closing
+    closing = null
+    _closing()
+    p.read(null, true)
   }
 
   return p = {
