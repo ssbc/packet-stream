@@ -24,7 +24,8 @@ module.exports = function (opts, name) {
       //any extra callbacks are just ignored.
       todo ++
       opts.request(msg.value, function (err, value) {
-        if(once) throw new Error('cb called twice from local api')
+        //this is a throwable offence - it's a progammer error.
+        if(once) throw new Error('cb called twice from local api,' + JSON.stringify(msg))
         once = true
         done ++
         if(err) p.read({error: flat(err), req: id})
