@@ -1,6 +1,6 @@
 {
   "name": "packet-stream",
-  "description": "",
+  "description": "The core-logic for rpc/multiplexing protocols",
   "version": "0.3.3",
   "homepage": "https://github.com/dominictarr/packet-stream",
   "repository": {
