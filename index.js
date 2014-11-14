@@ -24,8 +24,7 @@ module.exports = function (opts, name) {
       //any extra callbacks are just ignored.
       todo ++
       opts.request(msg.value, function (err, value) {
-        //this is a throwable offence - it's a progammer error.
-        if(once) throw new Error('cb called twice from local api,' + JSON.stringify(msg))
+        if(once) throw new Error('cb called twice from local api')
         once = true
         done ++
         if(err) p.read({error: flat(err), req: id})
@@ -178,9 +177,9 @@ module.exports = function (opts, name) {
     destroy: function (end) {
       end = end || flat(end)
       p.ended = end
-      var err = end === true
-        ? new Error('unexpected end of parent stream')
-        : end
+      var err = (end === true ? new Error('unexpected end of parent stream') : end)
+      if(end !== true)
+        err.message = 'MUXRPC: Unexpected end of parent stream, ' + err.message
 
       requests.forEach(function (cb) { done++; cb(err) })
       instreams.forEach(function (s, id) {
