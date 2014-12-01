@@ -1,7 +1,7 @@
 function flat(err) {
   if(!err) return err
   if(err === true) return true
-  return {message: err.message, stack: err.stack}
+  return {message: err.message, name: err.name, stack: err.stack}
 }
 
 module.exports = function (opts, name) {
@@ -177,9 +177,9 @@ module.exports = function (opts, name) {
     destroy: function (end) {
       end = end || flat(end)
       p.ended = end
-      var err = (end === true ? new Error('unexpected end of parent stream') : end)
-      if(end !== true)
-        err.message = 'MUXRPC: Unexpected end of parent stream, ' + err.message
+      var err = end === true
+        ? new Error('unexpected end of parent stream')
+        : end
 
       requests.forEach(function (cb) { done++; cb(err) })
       instreams.forEach(function (s, id) {
