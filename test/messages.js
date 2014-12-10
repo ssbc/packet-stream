@@ -203,3 +203,14 @@ tape('receive stream, then close', function (t) {
 
 })
 
+tape('call close cb when the stream is ended', function (t) {
+  var err = new Error('test error')
+  var a = ps({
+    close: function (_err) {
+      t.equal(_err, err)
+      t.end()
+    }
+  })
+
+  a.write(null, err)
+})
