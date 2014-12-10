@@ -63,6 +63,11 @@ var A = packets({
     stream.read = stream.write
   }
 
+  //c
+  close: function (err) {
+    console.log('closed', err)
+  }
+
 })
 
 var B = packets({})
