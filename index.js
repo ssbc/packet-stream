@@ -180,18 +180,22 @@ module.exports = function (opts, name) {
       var err = end === true
         ? new Error('unexpected end of parent stream')
         : end
-
-      requests.forEach(function (cb) { done++; cb(err) })
+      var ended = 0
+      requests.forEach(function (cb) { ended ++; done++; cb(err) })
       instreams.forEach(function (s, id) {
+        ended ++
         delete instreams[id]
         s.destroy(err)
       })
       outstreams.forEach(function (s, id) {
+        ended ++
         delete outstreams[id]
         s.destroy(err)
       })
       closing = opts.close
-      maybeDone(err)
+      //from the perspective of the outside stream it's not an error
+      //if the stream was in a state that where end was okay.
+      maybeDone(!ended && end === true ? null : err)
       return
     }
   }
