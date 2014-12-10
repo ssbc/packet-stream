@@ -121,15 +121,15 @@ module.exports = function (opts, name) {
     }
   }
 
-  function maybeDone () {
+  function maybeDone (err) {
     if(!closing) return
     if(todo !== done) return
     closed = true
 
     var _closing = closing
     closing = null
-    _closing()
-    p.read(null, true)
+    _closing(err)
+    p.read(null, err || true)
   }
 
   return p = {
@@ -190,7 +190,8 @@ module.exports = function (opts, name) {
         delete outstreams[id]
         s.destroy(err)
       })
-      maybeDone()
+      closing = opts.close
+      maybeDone(err)
       return
     }
   }
