@@ -55,17 +55,17 @@ module.exports = function (opts, name) {
       },
       destroy: function (err) {
         if(!stream.writeEnd) {
-          stream.writeEnd = false
+          stream.writeEnd = true
           done ++
           if(!stream.readEnd) {
             done ++
-            stream.readEnd = false
+            stream.readEnd = true
             stream.read(null, err)
           }
           stream.write(null, err)
         }
         else if (!stream.readEnd) {
-          stream.readEnd = false
+          stream.readEnd = true
           done++
           stream.read(null, err)
         }
