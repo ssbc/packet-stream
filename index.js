@@ -69,6 +69,7 @@ module.exports = function (opts, name) {
           done++
           stream.read(null, err)
         }
+        stream = null
       },
       read: null
     }
@@ -130,6 +131,12 @@ module.exports = function (opts, name) {
     closing = null
     _closing(err)
     p.read(null, err || true)
+
+    // deallocate
+    p = null
+    requests = null
+    instreams = null
+    outstreams = null
   }
 
   return p = {
@@ -166,7 +173,7 @@ module.exports = function (opts, name) {
     },
 
     write: function (msg, end) {
-      if(p.ended) return
+      if(!p || p.ended) return
       //handle requests
       if(end) return p.destroy(end)
 
