@@ -226,3 +226,20 @@ tape('call close cb when the stream is ended', function (t) {
   a.write(null, true)
 })
 
+
+tape('double close', function (t) {
+
+  var a = ps({
+    close: function (err) {
+      console.log('close', err)
+    }
+  })
+
+  console.log('close 1')
+  a.close(function () {
+  console.log('close 2')
+    a.close(function () {
+      t.end()
+    })
+  })
+})

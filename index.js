@@ -130,7 +130,8 @@ module.exports = function (opts, name) {
     var _closing = closing
     closing = null
     _closing(err)
-    p.read(null, err || true)
+    if (p)
+      p.read(null, err || true)
 
     // deallocate
     p = null
