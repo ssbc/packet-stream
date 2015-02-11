@@ -141,9 +141,16 @@ module.exports = function (opts, name) {
   }
 
   return p = {
-    close: function (cb) {
-      if(!cb) throw new Error('packet-stream.close *must* have callback')
+    close: function (force, cb) {
+      if (!cb && typeof force == 'function') {
+        cb = force
+        force = undefined
+      }
+      if (!cb) throw new Error('packet-stream.close *must* have callback')
       closing = cb
+      if (force) {
+        done = todo        
+      }
       maybeDone()
     },
     ended: false,
