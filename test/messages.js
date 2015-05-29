@@ -96,16 +96,16 @@ tape('error async when stream ends', function (t) {
   a.write(null, true)
 })
 
-tape('request-response', function (t) {
+tape('close after request finishes', function (t) {
 
   t.plan(2)
 
+  var called = false
   var a = ps({
     request: function (value, cb) {
       setTimeout(function () {
         cb(null, value * 2)
       })
-      //calling a second time should throw.
     }
   })
 
@@ -116,9 +116,12 @@ tape('request-response', function (t) {
   b.request(7, function (err, value) {
     t.notOk(err)
     t.equal(value, 14)
+    called = true
   })
 
   b.close(function (err) {
+    if (!called)
+      throw "not called"
     t.end()
   })
 
@@ -242,4 +245,29 @@ tape('double close', function (t) {
       t.end()
     })
   })
+})
+
+tape('properly close if destroy called with a open request', function (t) {
+
+  var a = ps({
+    request: function (value, cb) {
+      // never calls cb
+    }
+  })
+
+  var b = ps({
+    close: function (err) {
+      console.log('close')
+      t.end()
+    }
+  })
+
+  a.read = b.write; b.read = a.write
+
+  b.request(7, function (err, value) {
+    console.log(err)
+  })
+
+  b.destroy()
+
 })
