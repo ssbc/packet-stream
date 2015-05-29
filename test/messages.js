@@ -17,11 +17,11 @@ tape('messages', function (t) {
   var b = ps({})
 
   // a.pipe(b).pipe(a)
-  a.read = b.write; b.read = a.write
+  a.read = b.write.bind(b); b.read = a.write.bind(a)
 
   var expected = ['hello', 'foo', 'bar']
 
-  expected.forEach(b.message)
+  expected.forEach(b.message.bind(b))
   t.deepEqual(actual, expected)
 
   t.end()
@@ -40,7 +40,7 @@ tape('request-response', function (t) {
 
   var b = ps({})
 
-  a.read = b.write; b.read = a.write
+  a.read = b.write.bind(b); b.read = a.write.bind(a)
 
   b.request(7, function (err, value) {
     t.notOk(err)
@@ -56,16 +56,13 @@ tape('stream', function (t) {
   var a = ps({
     stream: function (stream) {
       //echo server
-      stream.read = stream.write
+      stream.read = stream.write.bind(stream)
     }
   })
-
   var b = ps({})
-
-  a.read = b.write; b.read = a.write
+  a.read = b.write.bind(b); b.read = a.write.bind(a)
 
   var s = b.stream()
-
   s.read = function (data, end) {
     if(!end)
       actual.push(data)
@@ -111,7 +108,7 @@ tape('close after request finishes', function (t) {
 
   var b = ps({})
 
-  a.read = b.write; b.read = a.write
+  a.read = b.write.bind(b); b.read = a.write.bind(a)
 
   b.request(7, function (err, value) {
     t.notOk(err)
@@ -129,6 +126,8 @@ tape('close after request finishes', function (t) {
 
 tape('streams, close', function (t) {
   t.plan(7)
+  var expected = [1,2,3,3,5]
+
   var a = ps({
     stream: function (stream) {
       //echo server
@@ -139,14 +138,9 @@ tape('streams, close', function (t) {
       }
     }
   })
-
-  var expected = [1,2,3,3,5]
-
   var b = ps({})
-
   var s = b.stream()
-
-  a.read = b.write; b.read = a.write
+  a.read = b.write.bind(b); b.read = a.write.bind(a)
 
   b.close(function (err) {
     t.ok(true)
@@ -177,6 +171,7 @@ tape('receive stream, then close', function (t) {
       }
 
       a.close(function (err) {
+        console.log('close reached', err)
         t.ok(true)
         t.end()
       })
@@ -187,10 +182,8 @@ tape('receive stream, then close', function (t) {
   var expected = [1,2,3,3,5]
 
   var b = ps({})
-
   var s = b.stream()
-
-  a.read = b.write; b.read = a.write
+  a.read = b.write.bind(b); b.read = a.write.bind(a)
 
   s.read = function (data, end) {
     if(end && end !== true) throw end
@@ -262,12 +255,12 @@ tape('properly close if destroy called with a open request', function (t) {
     }
   })
 
-  a.read = b.write; b.read = a.write
+  a.read = b.write.bind(b); b.read = a.write.bind(a)
 
   b.request(7, function (err, value) {
     console.log(err)
   })
 
-  b.destroy()
+  b.destroy(true)
 
 })
