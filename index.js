@@ -137,8 +137,6 @@ PacketStream.prototype._onrequest = function (msg) {
     // A incoming response
     if (typeof this._requests[rid] == 'function')
       this._requests[rid](msg.error, msg.value)
-    delete this._requests[rid]
-    this._maybedone()
   }
   else {
     // An incoming request
