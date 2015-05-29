@@ -170,6 +170,9 @@ PacketStream.prototype._onstream = function (msg) {
     // Incoming stream data
     var rid = msg.req*-1
     var outs = this._outstreams[rid]
+    if (!outs)
+      return console.error('no stream for incoming msg', msg)
+
     if (msg.end) {
       if (outs.writeEnd)
         delete this._outstreams[rid]
