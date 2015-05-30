@@ -1,7 +1,7 @@
 {
   "name": "packet-stream",
   "description": "The core-logic for rpc/multiplexing protocols",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "https://github.com/ssbc/packet-stream",
   "repository": {
     "type": "git",
