@@ -100,7 +100,7 @@ PacketStream.prototype._maybedone = function (err) {
   // deallocate
   this.opts = null
   this._closecbs.length = 0
-  this.read = closedread // this is assigned by the consumer, and there's a good chance it captured self in the closure
+  this.read = closedread
 }
 
 function closedread (msg) {
@@ -218,8 +218,8 @@ function PacketStreamSubstream (id, ps, remove) {
   this.writeEnd = null
   this.readEnd  = null
 
-  this._ps          = ps        // must release, may capture `this`
-  this._remove      = remove    // must release, may capture `this`
+  this._ps          = ps     // must release, may capture `this`
+  this._remove      = remove // must release, may capture `this`
   this._seq_counter = 1
 }
 
@@ -249,20 +249,30 @@ PacketStreamSubstream.prototype.destroy = function (err) {
     this.writeEnd = true
     if (!this.readEnd) {
       this.readEnd = true
-      this.read(null, err)
+      try {
+        // catch errors to ensure cleanup
+        this.read(null, err)
+      } catch (e) {
+        console.error('Exception thrown by PacketStream substream end handler', e)
+      }
     }
     this.write(null, err)
   }
   else if (!this.readEnd) {
     this.readEnd = true
-    this.read(null, err)
+    try {
+      // catch errors to ensure cleanup
+      this.read(null, err)
+    } catch (e) {
+      console.error('Exception thrown by PacketStream substream end handler', e)
+    }
   }
 
   // deallocate
   if (this._ps) {
     this._remove()
     this._remove = null
-    this.read = closedread // this is assigned by the consumer, and there's a good chance it captured self in the closure
+    this.read = closedread
     this._ps = null
   }
 }
