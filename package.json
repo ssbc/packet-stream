@@ -2,10 +2,10 @@
   "name": "packet-stream",
   "description": "The core-logic for rpc/multiplexing protocols",
   "version": "1.0.0",
-  "homepage": "https://github.com/dominictarr/packet-stream",
+  "homepage": "https://github.com/ssbc/packet-stream",
   "repository": {
     "type": "git",
-    "url": "git://github.com/dominictarr/packet-stream.git"
+    "url": "git://github.com/ssbc/packet-stream.git"
   },
   "dependencies": {},
   "devDependencies": {
