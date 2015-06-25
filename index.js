@@ -25,7 +25,7 @@ function PacketStream (opts) {
 
 // Sends a single message to the other end
 PacketStream.prototype.message = function (obj) {
-  this.read(obj)
+  this.read({req: 0, stream: false, end: false, value: obj})
 }
 
 // Sends a message to the other end, expects an (err, obj) response
@@ -37,7 +37,7 @@ PacketStream.prototype.request = function (obj, cb) {
     cb(err, value)
     self._maybedone()
   }
-  this.read({ value: obj, req: rid })
+  this.read({ req:rid, stream: false, end: false, value: obj })
 }
 
 // Sends a request to the other end for a stream
@@ -118,16 +118,16 @@ PacketStream.prototype.write = function (msg, end) {
   if (this.ended)
     return
 
-  if (end)                      this.destroy(end)
-  else if (msg.req && !msg.seq) this._onrequest(msg)
-  else if (msg.req && msg.seq)  this._onstream(msg)
-  else                          this._onmessage(msg)
+  if (end)                         this.destroy(end)
+  else if (msg.req && !msg.stream) this._onrequest(msg)
+  else if (msg.req && msg.stream)  this._onstream(msg)
+  else                             this._onmessage(msg)
 }
 
 // Internal handler of incoming message msgs
 PacketStream.prototype._onmessage = function (msg) {
   if (this.opts && 'function' === typeof this.opts.message)
-    this.opts.message(msg)
+    this.opts.message(msg.value)
 }
 
 // Internal handler of incoming request msgs
@@ -146,8 +146,8 @@ PacketStream.prototype._onrequest = function (msg) {
       this.opts.request(msg.value, function (err, value) {
         if(once) throw new Error('cb called twice from local api')
         once = true
-        if(err) self.read({ error: flat(err), req: rid })
-        else    self.read({ value: value,     req: rid })
+        if(err) self.read({ value: flat(err), end: true, req: rid })
+        else    self.read({ value: value, end: false, req: rid })
         self._maybedone()
       })
     } else {
@@ -155,10 +155,15 @@ PacketStream.prototype._onrequest = function (msg) {
         var err = (this.ended === true)
           ? new Error('unexpected end of parent stream')
           : this.ended
-        this.read({ error: flat(err), req: rid })
+        this.read({ value: flat(err), end: true, stream: false, req: rid })
       }
       else
-        this.read({ error: { message: 'Unable to handle requests', name: 'NO_REQUEST_HANDLER', stack: null }, req: rid })
+        this.read({ value: {
+            message: 'Unable to handle requests',
+            name: 'NO_REQUEST_HANDLER', stack: null
+          },
+          end: true, stream: false, req: rid
+        })
       this._maybedone()
     }
   }
@@ -177,7 +182,7 @@ PacketStream.prototype._onstream = function (msg) {
       if (outs.writeEnd)
         delete this._outstreams[rid]
       outs.readEnd = true
-      outs.read(null, msg.end)
+      outs.read(null, msg.value)
       this._maybedone()
     }
     else
@@ -203,7 +208,7 @@ PacketStream.prototype._onstream = function (msg) {
       if (ins.writeEnd)
         delete this._instreams[rid]
       ins.readEnd = true
-      ins.read(null, msg.end)
+      ins.read(null, msg.value)
       this._maybedone()
     }
     else
@@ -228,14 +233,14 @@ PacketStreamSubstream.prototype.write = function (data, err) {
     this.writeEnd = err
     var ps = this._ps
     if (ps) {
-      ps.read({ req: this.id, seq: this._seq_counter++, end: flat(err) })
+      ps.read({ req: this.id, stream: true, end: true, value: flat(err) })
       if (this.readEnd)
         this.destroy()
       ps._maybedone()
     }
   }
   else {
-    if (this._ps) this._ps.read({ req: this.id, seq: this._seq_counter++, value: data })
+    if (this._ps) this._ps.read({ req: this.id, stream: true, end: false, value: data })
   }
 }
 
@@ -254,6 +259,7 @@ PacketStreamSubstream.prototype.destroy = function (err) {
         this.read(null, err)
       } catch (e) {
         console.error('Exception thrown by PacketStream substream end handler', e)
+        console.error(e.stack)
       }
     }
     this.write(null, err)
@@ -265,6 +271,7 @@ PacketStreamSubstream.prototype.destroy = function (err) {
       this.read(null, err)
     } catch (e) {
       console.error('Exception thrown by PacketStream substream end handler', e)
+      console.error(e.stack)
     }
   }
 
