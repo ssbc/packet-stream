@@ -136,7 +136,10 @@ PacketStream.prototype._onrequest = function (msg) {
   if(msg.req < 0) {
     // A incoming response
     if (typeof this._requests[rid] == 'function')
-      this._requests[rid](msg.error, msg.value)
+      this._requests[rid](
+        msg.end ? msg.value: null,
+        msg.end ? null : msg.value
+      )
   }
   else {
     // An incoming request
