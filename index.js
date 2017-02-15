@@ -71,8 +71,18 @@ PacketStream.prototype.destroy = function (end) {
   // force-close all requests and substreams
   var numended = 0
   for (var k in this._requests)   { numended++; this._requests[k](err) }
-  for (var k in this._instreams)  { numended++; this._instreams[k].destroy(err) }
-  for (var k in this._outstreams) { numended++; this._outstreams[k].destroy(err) }
+  for (var k in this._instreams)  {
+    numended++
+    // destroy substream without sending it a message
+    this._instreams[k].writeEnd = true
+    this._instreams[k].destroy(err)
+  }
+  for (var k in this._outstreams) {
+    numended++
+    // destroy substream without sending it a message
+    this._outstreams[k].writeEnd = true
+    this._outstreams[k].destroy(err)
+  }
 
   //from the perspective of the outside stream it's not an error
   //if the stream was in a state that where end was okay. (no open requests/streams)
