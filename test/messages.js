@@ -264,3 +264,26 @@ tape('properly close if destroy called with a open request', function (t) {
   b.destroy(true)
 
 })
+
+tape('destroy sends not more than one message', function (t) {
+  var a = ps({
+    close: function (err) {
+      t.end()
+    }
+  })
+
+  var msgs = 0
+  a.read = function (msg, end) {
+    if (end) return t.ok(end)
+    msgs++
+    if (msgs > 1) t.fail(msgs)
+    else t.ok(msg)
+  }
+
+  var s1 = a.stream()
+  var s2 = a.stream()
+  s1.read = function () {}
+  s2.read = function () {}
+
+  a.destroy(true)
+})
