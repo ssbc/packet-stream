@@ -184,6 +184,13 @@ PacketStream.prototype._onrequest = function (msg) {
 
 // Internal handler of incoming stream msgs
 PacketStream.prototype._onstream = function (msg) {
+  if(msg.end && msg.value
+    && msg.value.message === 'unexpected end of parent stream') {
+    // The other end is closing the stream with the legacy destroy method.
+    // End the stream early to drop the rest of the incoming error messages.
+    return this.destroy(msg.value)
+  }
+
   if(msg.req < 0) {
     // Incoming stream data
     var rid = msg.req*-1
