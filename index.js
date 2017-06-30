@@ -78,12 +78,14 @@ PacketStream.prototype.destroy = function (end) {
     numended++
     // destroy substream without sending it a message
     this._instreams[k].writeEnd = true
+    this._instreams[k].readEnd = true
     this._instreams[k].destroy(err)
   }
   for (var k in this._outstreams) {
     numended++
     // destroy substream without sending it a message
     this._outstreams[k].writeEnd = true
+    this._outstreams[k].readEnd = true
     this._outstreams[k].destroy(err)
   }
 
