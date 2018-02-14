@@ -204,18 +204,18 @@ PacketStream.prototype._onstream = function (msg) {
         this.opts.stream(ins)
     }
 
-    if (!ins.read)
-      return console.error('no .read for stream:', ins.id, 'dropped:', msg)
-
-    if (msg.end) {
+    if(msg.end) {
       if (ins.writeEnd)
         delete this._instreams[rid]
       ins.readEnd = true
-      ins.read(null, msg.value)
+      if(ins.read)
+        ins.read(null, msg.value)
       this._maybedone()
     }
-    else
+    else if(ins.read)
       ins.read(msg.value)
+    else
+      console.error('no .read for stream:', ins.id, 'dropped:', msg)
   }
 }
 
@@ -286,3 +286,4 @@ PacketStreamSubstream.prototype.destroy = function (err) {
     this._ps = null
   }
 }
+
