@@ -30,6 +30,7 @@ PacketStream.prototype.message = function (obj) {
 
 // Sends a message to the other end, expects an (err, obj) response
 PacketStream.prototype.request = function (obj, cb) {
+  if (this._closing) return cb(new Error('parent stream is closing'))
   var rid = this._req_counter++
   var self = this
   this._requests[rid] = function (err, value) {
@@ -42,6 +43,7 @@ PacketStream.prototype.request = function (obj, cb) {
 
 // Sends a request to the other end for a stream
 PacketStream.prototype.stream = function () {
+  if (this._closing) throw new Error('parent stream is closing')
   var rid = this._req_counter++
   var self = this
   this._outstreams[rid] = new PacketStreamSubstream(rid, this, function() { delete self._outstreams[rid] })
@@ -63,6 +65,7 @@ PacketStream.prototype.close = function (cb) {
 PacketStream.prototype.destroy = function (end) {
   end = end || flat(end)
   this.ended = end
+  this._closing = true
 
   var err = (end === true)
     ? new Error('unexpected end of parent stream')
@@ -71,14 +74,23 @@ PacketStream.prototype.destroy = function (end) {
   // force-close all requests and substreams
   var numended = 0
   for (var k in this._requests)   { numended++; this._requests[k](err) }
-  for (var k in this._instreams)  { numended++; this._instreams[k].destroy(err) }
-  for (var k in this._outstreams) { numended++; this._outstreams[k].destroy(err) }
+  for (var k in this._instreams)  {
+    numended++
+    // destroy substream without sending it a message
+    this._instreams[k].writeEnd = true
+    this._instreams[k].destroy(err)
+  }
+  for (var k in this._outstreams) {
+    numended++
+    // destroy substream without sending it a message
+    this._outstreams[k].writeEnd = true
+    this._outstreams[k].destroy(err)
+  }
 
   //from the perspective of the outside stream it's not an error
   //if the stream was in a state that where end was okay. (no open requests/streams)
   if (numended === 0 && end === true)
     err = null
-  this._closing = true
   this._maybedone(err)
 }
 
