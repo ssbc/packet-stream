@@ -283,7 +283,8 @@ PacketStreamSubstream.prototype.destroy = function (err) {
     this.readEnd = true
     try {
       // catch errors to ensure cleanup
-      this.read(null, err)
+      // don't assume that a stream has been piped anywhere.
+      if(this.read) this.read(null, err)
     } catch (e) {
       console.error('Exception thrown by PacketStream substream end handler', e)
       console.error(e.stack)
@@ -298,4 +299,5 @@ PacketStreamSubstream.prototype.destroy = function (err) {
     this._ps = null
   }
 }
+
 
