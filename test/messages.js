@@ -287,3 +287,29 @@ tape('destroy sends not more than one message', function (t) {
 
   a.destroy(true)
 })
+
+tape('ensure properly close if destroy called with a open request', function (t) {
+
+  const expectedError = new Error('a sudden but inevitable close')
+
+  var a = ps({
+    request: function (value, cb) {
+      // never calls cb
+    }
+  })
+
+  var b = ps({
+    close: function (err) {
+      t.deepEquals(err, expectedError, 'close err matches')
+      t.end()
+    }
+  })
+
+  a.read = b.write.bind(b); b.read = a.write.bind(a)
+
+  b.request(7, function (err, value) {
+    t.deepEquals(err, expectedError, 'request err matches')
+  })
+
+  b.destroy(expectedError)
+})

@@ -36,7 +36,7 @@ PacketStream.prototype.request = function (obj, cb) {
   this._requests[rid] = function (err, value) {
     delete self._requests[rid]
     cb(err, value)
-    self._maybedone()
+    self._maybedone(err)
   }
   this.read({ req:rid, stream: false, end: false, value: obj })
 }
