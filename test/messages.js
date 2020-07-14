@@ -9,7 +9,6 @@ tape('messages', function (t) {
 
   var a = ps({
     message: function (msg) {
-      console.log('MSG', msg)
       actual.push(msg)
     }
   })
@@ -171,7 +170,6 @@ tape('receive stream, then close', function (t) {
       }
 
       a.close(function (err) {
-        console.log('close reached', err)
         t.ok(true)
         t.end()
       })
@@ -227,13 +225,10 @@ tape('double close', function (t) {
 
   var a = ps({
     close: function (err) {
-      console.log('close', err)
     }
   })
 
-  console.log('close 1')
   a.close(function () {
-  console.log('close 2')
     a.close(function () {
       t.end()
     })
@@ -250,7 +245,6 @@ tape('properly close if destroy called with a open request', function (t) {
 
   var b = ps({
     close: function (err) {
-      console.log('close')
       t.end()
     }
   })
@@ -258,7 +252,6 @@ tape('properly close if destroy called with a open request', function (t) {
   a.read = b.write.bind(b); b.read = a.write.bind(a)
 
   b.request(7, function (err, value) {
-    console.log(err)
   })
 
   b.destroy(true)
