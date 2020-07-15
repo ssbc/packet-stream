@@ -250,8 +250,8 @@ PacketStreamSubstream.prototype.write = function (data, err) {
     if (ps) {
       ps.read({ req: this.id, stream: true, end: true, value: flat(err) })
       if (this.readEnd)
-        this.destroy()
-      ps._maybedone()
+        this.destroy(err)
+      ps._maybedone(err)
     }
   }
   else {
