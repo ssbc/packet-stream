@@ -36,7 +36,7 @@ PacketStream.prototype.request = function (obj, cb) {
   this._requests[rid] = function (err, value) {
     delete self._requests[rid]
     cb(err, value)
-    self._maybedone()
+    self._maybedone(err)
   }
   this.read({ req:rid, stream: false, end: false, value: obj })
 }
@@ -250,8 +250,8 @@ PacketStreamSubstream.prototype.write = function (data, err) {
     if (ps) {
       ps.read({ req: this.id, stream: true, end: true, value: flat(err) })
       if (this.readEnd)
-        this.destroy()
-      ps._maybedone()
+        this.destroy(err)
+      ps._maybedone(err)
     }
   }
   else {
