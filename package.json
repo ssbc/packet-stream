@@ -10,7 +10,7 @@
   "devDependencies": {
     "tap-bail": "^1.0.0",
     "tap-spec": "^5.0.0",
-    "tape": "~3.0.0"
+    "tape": "~5.2.2"
   },
   "scripts": {
     "prepublishOnly": "npm test",

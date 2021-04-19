@@ -105,9 +105,9 @@ PacketStream.prototype._maybedone = function (err) {
     return // not yet
 
   // close
+  this.read(null, err || true)
   this._closed = true
   this._closecbs.forEach(function (cb) { cb(err) })
-  this.read(null, err || true)
 
   // deallocate
   this.opts = null
