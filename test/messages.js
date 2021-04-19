@@ -244,9 +244,11 @@ tape('double close', function (t) {
 })
 
 tape('properly close if destroy called with a open request', function (t) {
+  t.plan(2)
 
   var a = ps({
     request: function (value, cb) {
+      t.equals(value, 7)
       // never calls cb
     }
   })
@@ -260,6 +262,7 @@ tape('properly close if destroy called with a open request', function (t) {
   a.read = b.write.bind(b); b.read = a.write.bind(a)
 
   b.request(7, function (err, value) {
+    t.ok(err, "request received error")
   })
 
   b.destroy(true)
