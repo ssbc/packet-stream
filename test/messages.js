@@ -83,6 +83,8 @@ tape('error async when stream ends', function (t) {
 
   var a = ps({})
 
+  a.read = function(){}
+
   a.request({foo: true}, function (err) {
     t.ok(err)
     t.equal(a.ended, true)
@@ -206,6 +208,8 @@ tape('call close cb with err when the stream has errored', function (t) {
     }
   })
 
+  a.read = function(){}
+
   a.write(null, err)
 })
 
@@ -217,6 +221,8 @@ tape('call close cb when the stream is ended', function (t) {
     }
   })
 
+  a.read = function(){}
+
   a.write(null, true)
 })
 
@@ -227,6 +233,8 @@ tape('double close', function (t) {
     close: function (err) {
     }
   })
+
+  a.read = function(){}
 
   a.close(function () {
     a.close(function () {
