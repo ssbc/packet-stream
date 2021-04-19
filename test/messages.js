@@ -3,6 +3,22 @@ var tape = require('tape')
 
 var ps = require('../')
 
+tape('warns when read() is not implemented', function (t) {
+  t.plan(1)
+
+  var originalConsoleError = console.error
+  console.error = msg => t.equal(msg, 'please overwrite read method to do IO')
+
+  var a = ps({
+    close: function (_err) {
+      console.error = originalConsoleError
+      t.end()
+    }
+  })
+
+  a.write(null, true)
+})
+
 tape('messages', function (t) {
 
   var actual = []
@@ -27,7 +43,6 @@ tape('messages', function (t) {
 })
 
 tape('request-response', function (t) {
-
   var a = ps({
     request: function (value, cb) {
       cb(null, value * 2)
@@ -45,7 +60,37 @@ tape('request-response', function (t) {
     t.notOk(err)
     t.equal(value, 14)
   })
+})
 
+tape('request-response handles error', function (t) {
+  var a = ps({
+    request: function (value, cb) {
+      cb(new Error("something bad"))
+    }
+  })
+
+  var b = ps({})
+
+  a.read = b.write.bind(b); b.read = a.write.bind(a)
+
+  b.request(7, function (err, value) {
+    t.match(err.message, /something bad/)
+    t.notOk(value)
+    t.end()
+  })
+})
+
+tape('request-response absent', function (t) {
+  t.plan(1)
+  var a = ps({})
+  var b = ps({})
+
+  a.read = b.write.bind(b); b.read = a.write.bind(a)
+
+  b.request(7, function (err, value) {
+    t.match(err.message, /Unable to handle requests/)
+    t.end()
+  })
 })
 
 tape('stream', function (t) {

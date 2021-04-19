@@ -1,2 +1,3 @@
 test/
 .github/
+.nyc_output
