@@ -1,17 +1,15 @@
-var PacketStreamSubstream = require('./substream')
-var utils = require('./utils')
-var flat = utils.flat
-var closedread = utils.closedread
+const PacketStreamSubstream = require('./substream')
+const {flat, closedread} = require('./utils')
 
 function PacketStream (opts) {
   this.ended = false
   this.opts  = opts // must release, may capture `this`
 
   this._req_counter = 1
-  this._requests    = {} // must release, may capture `this`
-  this._instreams   = {} // must release, may capture `this`
-  this._outstreams  = {} // must release, may capture `this`
-  this._closecbs    = [] // must release, may capture `this`
+  this._requests    = new Map() // must release, may capture `this`
+  this._instreams   = new Map() // must release, may capture `this`
+  this._outstreams  = new Map() // must release, may capture `this`
+  this._closecbs    = []        // must release, may capture `this`
   this._closing     = false
   this._closed      = false
   if (opts.close)
@@ -26,30 +24,30 @@ PacketStream.prototype.message = function (obj) {
 // Sends a message to the other end, expects an (err, obj) response
 PacketStream.prototype.request = function (obj, cb) {
   if (this._closing) return cb(new Error('parent stream is closing'))
-  var rid = this._req_counter++
-  var self = this
-  this._requests[rid] = function (err, value) {
-    delete self._requests[rid]
+  const rid = this._req_counter++
+  this._requests.set(rid, (err, value) => {
+    this._requests.delete(rid)
     cb(err, value)
-    self._maybedone(err)
-  }
-  this.read({ req:rid, stream: false, end: false, value: obj })
+    this._maybedone(err)
+  })
+  this.read({ req: rid, stream: false, end: false, value: obj })
 }
 
 // Sends a request to the other end for a stream
 PacketStream.prototype.stream = function () {
   if (this._closing) throw new Error('parent stream is closing')
-  var rid = this._req_counter++
-  var self = this
-  this._outstreams[rid] = new PacketStreamSubstream(rid, this, function() { delete self._outstreams[rid] })
-  return this._outstreams[rid]
+  const rid = this._req_counter++
+  const outs = new PacketStreamSubstream(rid, this, () => {
+    this._outstreams.delete(rid)
+  })
+  this._outstreams.set(rid, outs)
+  return outs
 }
 
 // Marks the packetstream to close when all current IO is finished
 PacketStream.prototype.close = function (cb) {
-  if(!cb) throw new Error('packet-stream.close *must* have callback')
-  if (this._closed)
-    return cb()
+  if (!cb) throw new Error('packet-stream.close *must* have callback')
+  if (this._closed) return cb()
   this._closecbs.push(cb)
   this._closing = true
   this._maybedone()
@@ -62,30 +60,32 @@ PacketStream.prototype.destroy = function (end) {
   this.ended = end
   this._closing = true
 
-  var err = (end === true)
+  let err = (end === true)
     ? new Error('unexpected end of parent stream')
     : end
 
   // force-close all requests and substreams
-  var numended = 0
-  for (var k in this._requests)   { numended++; this._requests[k](err) }
-  for (var k in this._instreams)  {
+  let numended = 0
+  this._requests.forEach((fn) => {
+    numended++;
+    fn(err)
+  })
+  this._instreams.forEach((ins) => {
+    numended++;
+    // destroy substream without sending it a message
+    ins.writeEnd = true
+    ins.destroy(err)
+  })
+  this._outstreams.forEach((outs) => {
     numended++
     // destroy substream without sending it a message
-    this._instreams[k].writeEnd = true
-    this._instreams[k].destroy(err)
-  }
-  for (var k in this._outstreams) {
-    numended++
-    // destroy substream without sending it a message
-    this._outstreams[k].writeEnd = true
-    this._outstreams[k].destroy(err)
-  }
+    outs.writeEnd = true
+    outs.destroy(err)
+  })
 
   //from the perspective of the outside stream it's not an error
   //if the stream was in a state that where end was okay. (no open requests/streams)
-  if (numended === 0 && end === true)
-    err = null
+  if (numended === 0 && end === true) err = null
   this._maybedone(err)
 }
 
@@ -94,20 +94,23 @@ PacketStream.prototype._maybedone = function (err) {
     return
 
   // check if all requests and streams finished
-  if (Object.keys(this._requests).length !== 0 ||
-      Object.keys(this._instreams).length !== 0 ||
-      Object.keys(this._outstreams).length !== 0)
+  if (this._requests.size !== 0 ||
+      this._instreams.size !== 0 ||
+      this._outstreams.size !== 0)
     return // not yet
 
   // close
   this.read(null, err || true)
   this._closed = true
-  this._closecbs.forEach(function (cb) { cb(err) })
+  this._closecbs.forEach((cb) => { cb(err) })
 
   // deallocate
   this.opts = null
   this._closecbs.length = 0
   this.read = closedread
+  this._requests.clear()
+  this._instreams.clear()
+  this._outstreams.clear()
 }
 
 // Sends data out to the other end
@@ -118,8 +121,7 @@ PacketStream.prototype.read = function (msg) {
 
 // Accepts data from the other end
 PacketStream.prototype.write = function (msg, end) {
-  if (this.ended)
-    return
+  if (this.ended) return
 
   if (end)                         this.destroy(end)
   else if (msg.req && !msg.stream) this._onrequest(msg)
@@ -129,48 +131,48 @@ PacketStream.prototype.write = function (msg, end) {
 
 // Internal handler of incoming message msgs
 PacketStream.prototype._onmessage = function (msg) {
-  if (this.opts && 'function' === typeof this.opts.message)
+  if (this.opts && typeof this.opts.message === 'function')
     this.opts.message(msg.value)
 }
 
 // Internal handler of incoming request msgs
 PacketStream.prototype._onrequest = function (msg) {
-  var rid = msg.req*-1
-  if(msg.req < 0) {
+  const rid = msg.req*-1
+  if (msg.req < 0) {
     // A incoming response
-    if (typeof this._requests[rid] == 'function')
-      this._requests[rid](
-        msg.end ? msg.value: null,
+    if (this._requests.has(rid))
+      this._requests.get(rid)(
+        msg.end ? msg.value : null,
         msg.end ? null : msg.value
       )
   }
   else {
     // An incoming request
-    if (this.opts && typeof this.opts.request == 'function') {
-      var once = false
-      var self = this
-      this.opts.request(msg.value, function (err, value) {
-        if(once) throw new Error('cb called twice from local api')
+    if (this.opts && typeof this.opts.request === 'function') {
+      let once = false
+      this.opts.request(msg.value, (err, value) => {
+        if (once) throw new Error('cb called twice from local api')
         once = true
-        if(err) self.read({ value: flat(err), end: true, req: rid })
-        else    self.read({ value: value, end: false, req: rid })
-        self._maybedone()
+        if (err) this.read({ value: flat(err), end: true, req: rid })
+        else     this.read({ value: value, end: false, req: rid })
+        this._maybedone()
       })
     } else {
       if (this.ended) {
         // FIXME: this block seems unreachable because of line 131
-        var err = (this.ended === true)
+        const err = (this.ended === true)
           ? new Error('unexpected end of parent stream')
           : this.ended
         this.read({ value: flat(err), end: true, stream: false, req: rid })
-      }
-      else
-        this.read({ value: {
+      } else {
+        this.read({
+          value: {
             message: 'Unable to handle requests',
             name: 'NO_REQUEST_HANDLER', stack: null
           },
           end: true, stream: false, req: rid
         })
+      }
       this._maybedone()
     }
   }
@@ -178,16 +180,16 @@ PacketStream.prototype._onrequest = function (msg) {
 
 // Internal handler of incoming stream msgs
 PacketStream.prototype._onstream = function (msg) {
-  if(msg.req < 0) {
+  if (msg.req < 0) {
     // Incoming stream data
-    var rid = msg.req*-1
-    var outs = this._outstreams[rid]
+    const rid = msg.req * -1
+    const outs = this._outstreams.get(rid)
     if (!outs)
       return console.error('no stream for incoming msg', msg)
 
     if (msg.end) {
       if (outs.writeEnd)
-        delete this._outstreams[rid]
+        this._outstreams.delete(rid)
       outs.readEnd = true
       outs.read(null, msg.value)
       this._maybedone()
@@ -197,32 +199,32 @@ PacketStream.prototype._onstream = function (msg) {
   }
   else {
     // Incoming stream request
-    var rid = msg.req
-    var ins = this._instreams[rid]
+    const rid = msg.req
+    let ins = this._instreams.get(rid)
 
     if (!ins) {
       // New stream
-      var self = this
-      ins = this._instreams[rid] = new PacketStreamSubstream(rid*-1, this, function() { delete self._instreams[rid] })
-      if (this.opts && typeof this.opts.stream == 'function')
+      ins = new PacketStreamSubstream(rid * -1, this, () => {
+        this._instreams.delete(rid)
+      })
+      this._instreams.set(rid, ins)
+      if (this.opts && typeof this.opts.stream === 'function')
         this.opts.stream(ins)
     }
 
-    if(msg.end) {
+    if (msg.end) {
       if (ins.writeEnd)
-        delete this._instreams[rid]
+        this._instreams.delete(rid)
       ins.readEnd = true
-      if(ins.read)
+      if (ins.read)
         ins.read(null, msg.value)
       this._maybedone()
     }
-    else if(ins.read)
+    else if (ins.read)
       ins.read(msg.value)
     else
       console.error('no .read for stream:', ins.id, 'dropped:', msg)
   }
 }
 
-module.exports = function (opts) {
-  return new PacketStream(opts)
-}
+module.exports = (opts) => new PacketStream(opts)

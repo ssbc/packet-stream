@@ -1,22 +1,19 @@
-var utils = require('./utils')
-var flat = utils.flat
-var closedread = utils.closedread
+const {flat, closedread} = require('./utils')
 
 function PacketStreamSubstream (id, ps, remove) {
   this.id       = id
-  this.read     = null // must release, may capture `this`
+  this.read     = null   // must release, may capture `this`
   this.writeEnd = null
   this.readEnd  = null
 
-  this._ps          = ps     // must release, may capture `this`
-  this._remove      = remove // must release, may capture `this`
-  this._seq_counter = 1
+  this._ps      = ps     // must release, may capture `this`
+  this._remove  = remove // must release, may capture `this`
 }
 
 PacketStreamSubstream.prototype.write = function (data, err) {
+  const ps = this._ps
   if (err) {
     this.writeEnd = err
-    var ps = this._ps
     if (ps) {
       ps.read({ req: this.id, stream: true, end: true, value: flat(err) })
       if (this.readEnd)
@@ -25,7 +22,7 @@ PacketStreamSubstream.prototype.write = function (data, err) {
     }
   }
   else {
-    if (this._ps) this._ps.read({ req: this.id, stream: true, end: false, value: data })
+    if (ps) ps.read({ req: this.id, stream: true, end: false, value: data })
   }
 }
 
