@@ -8,13 +8,15 @@
     "url": "git://github.com/ssbc/packet-stream.git"
   },
   "devDependencies": {
+    "nyc": "^15.1.0",
     "tap-bail": "^1.0.0",
     "tap-spec": "^5.0.0",
     "tape": "~5.2.2"
   },
   "scripts": {
     "prepublishOnly": "npm test",
-    "test": "tape test/*.js | tap-bail | tap-spec"
+    "test": "tape test/*.js | tap-bail | tap-spec",
+    "coverage": "nyc npm run test"
   },
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",
   "license": "MIT"

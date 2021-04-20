@@ -167,6 +167,7 @@ PacketStream.prototype._onrequest = function (msg) {
       })
     } else {
       if (this.ended) {
+        // FIXME: this block seems unreachable because of line 131
         var err = (this.ended === true)
           ? new Error('unexpected end of parent stream')
           : this.ended
