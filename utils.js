@@ -1,6 +1,6 @@
 function flat(err) {
-  if(!err) return err
-  if(err === true) return true
+  if (!err) return err
+  if (err === true) return true
   return {message: err.message, name: err.name, stack: err.stack}
 }
 
