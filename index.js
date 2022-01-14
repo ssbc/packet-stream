@@ -194,8 +194,13 @@ PacketStream.prototype._onstream = function (msg) {
       outs.read(null, msg.value)
       this._maybedone()
     }
-    else
-      outs.read(msg.value)
+    else {
+      if (outs.writeEnd) {
+        // Drop data received after wrote end
+      } else {
+        outs.read(msg.value)
+      }
+    }
   }
   else {
     // Incoming stream request
@@ -221,7 +226,11 @@ PacketStream.prototype._onstream = function (msg) {
       this._maybedone()
     }
     else if (ins.read)
-      ins.read(msg.value)
+      if (ins.writeEnd) {
+        // Drop data received after wrote end
+      } else {
+        ins.read(msg.value)
+      }
     else
       console.error('no .read for stream:', ins.id, 'dropped:', msg)
   }
